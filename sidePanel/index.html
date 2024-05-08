@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="module" src="domExtractor.js"></script>
+    <script type="module" src="main.js"></script>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <meta charset="utf-8">
+    <title>제목</title>
+</head>
+<body>
+    <header class='header'>
+        <h1>리뷰 요약 AI</h1>
+    </header>
+    <main class='main'>
+        <section class='domainSection'>
+            <h2>현재 도메인:</h2>
+        </section>
+        <section class='reviewSection'>
+            <article class='domainListArticle'>
+                <h3>요약 가능 도메인 목록</h3>
+                <p style="display: none;">
+                    smartstore.naver.com<br/>
+                    www.coupang.com
+                </p>
+                <svg id="arrow" width="32" height="32" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="7" fill="none" />
+                    <path d="M4 6L8 10L12 6" stroke="gray" stroke-width="1" fill="none"/>
+                </svg>
+            </article>
+            <button class='reviewSummaryButton'>요약 하기</button>
+            <svg class='donut' viewBox="0 0 30 30">
+                <circle cx="15" cy="15" r="10" fill="none" stroke="black" stroke-width="4"/>
+            </svg>
+            <article id='pros' class=reviewArticle>
+                <h3>장점</h3>
+                <p>장점 내용</p>
+            </article>
+            <article id='cons' class=reviewArticle>
+                <h3>단점</h3>
+                <p>단점 내용</p>
+            </article>
+            <article id='overall' class=reviewArticle>
+                <h3>종합</h3>
+                <p>종합 내용</p>
+            </article>
+            <article id='error' class=reviewArticle>
+                <h3>에러</h3>
+                <p>에러 내용</p>
+            </article>
+        </section>
+    </main>
+</body>
+</html>

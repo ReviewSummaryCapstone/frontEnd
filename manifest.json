@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "My Extension",
+  "version": "1.0",
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://smartstore.naver.com/*",
+    "https://www.coupang.com/*"
+  ],
+  "side_panel": {
+    "default_path": "sidePanel/index.html"
+  },
+  "action": {
+
+  },
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+  ]
+}

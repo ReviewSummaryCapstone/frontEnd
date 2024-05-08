@@ -1,0 +1,113 @@
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.domainSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.reviewSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: calc(100% - 50px);
+    gap:20px;
+}
+
+.domainListArticle {
+    display: flex;
+    flex-direction: column;
+    gap:0px;
+    align-items: center;
+    border-radius: 5px;
+    border: 1px solid black;
+    min-heigth:500px;
+    width: 100%;
+}
+
+.domainListArticle h3 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.domainListArticle p {
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+    margin: 0 0 20px 0;
+}
+
+.reviewSummaryButton {
+    width: 100px;
+    height: 30px;
+    border: none;
+    border-radius: 10px;
+    background-color: white;
+    font-wieght: 600px;
+    margin-top:10px;
+    font-size:16px;
+}
+
+.reviewSummaryButton:hover{
+    background-color: rgb(200,200,200);
+}
+
+.reviewSummaryButton:active{
+    color: white;
+    background-color: rgb(150,150,150);
+}
+
+.reviewArticle {
+    display: none;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.reviewArticle h3{
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.reviewArticle p{
+    color: #666;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* 호버 효과: 원형으로 회색으로 채우기 */
+#arrow:hover path {
+    stroke: black
+}
+
+#arrow:hover circle {
+    fill: lightgray
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); stroke-dasharray: 1, 200; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: 100, 200; stroke-dashoffset: -15; }
+    100% { transform: rotate(360deg); stroke-dasharray: 1, 200; stroke-dashoffset: -125; }
+}
+
+.donut {
+    display: none;
+    animation: spin 2s linear infinite;
+    transform-origin: center;
+    width: 30px;
+    height: 30px;
+    margin-top:10px;
+}
+
