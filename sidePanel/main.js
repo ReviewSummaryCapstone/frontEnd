@@ -1,4 +1,4 @@
-import { getNaverProps, getCoupangProps } from 'domExtractor.js'
+import { getNaverProps, getCoupangProps } from './domExtractor.js'
 
 let permit=false
 let domain=null
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
   reviewErrorId = document.querySelector('#error')
   reviewErrorTextId = document.querySelector('#error p')
   arrowId = document.querySelector('#arrow')
-  setCachedData('https://smartstore.naver.com/jangsinmall/products/8713155253', {pros:'장점: 장점내용', cons:'단점: 단점내용', comprensive:'종합: 종합내용'})
+  //setCachedData('https://smartstore.naver.com/jangsinmall/products/8713155253', {pros:'장점: 장점내용', cons:'단점: 단점내용', comprensive:'종합: 종합내용'})
 
   // 탭 변경에 따른 측면 패널 업데이트
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -71,36 +71,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
   arrowId.addEventListener('click', function() {
     this.style.transform = (this.style.transform === 'rotate(180deg)') ? 'rotate(0deg)' : 'rotate(180deg)';
-    console.log(domainListId.style.display)
     domainListId.style.display = (domainListId.style.display === 'none' ? 'block' : 'none')
   })
     
 });
 
-
+//
+//
+//
 // 리뷰 요약 처리
 async function reviewProcess(){
   // 버튼 클릭 시 "요약 중" 메시지 표시
   //const fullUrl = `${protocol}//${domain}${pathname}`;
-  const apiUrl = 'http://43.203.207.57:8080/summary/smartstore';
+  let apiUrl = 'http://43.203.207.57:8080/summary/';
+  let props
   
   try {
-    let props
     if(domain === "smartstore.naver.com") {
+      apiUrl+='smartstore'
       props = await getNaverProps()
     } else if (domain === "www.coupang.com") {
+      apiUrl+='coupang'
       props = await getCoupangProps()
     }
-    console.log(props)
   } catch (error) {
     console.error('DOM 읽는 것에 에러 발생', error)
   }
   
+  const key = domain+'/'+JSON.stringify(props)
+  console.log('apiUrl',apiUrl,'props',props,'key',key)
     
   // 여기서부터 비동기 작업 (크롬 API 때문)
   try {
-    const result = await getStorageData(fullUrl);
-    const cachedData = result[fullUrl];
+    const result = await getCachedData(key);
+    const cachedData = result[key];
     
     if (cachedData) {
       console.log("캐시 있음", cachedData);
@@ -108,15 +112,15 @@ async function reviewProcess(){
       changeReviewButtonText();
       changeReviewText(cachedData.data, false);
     } else {
-      console.log("캐시 없음", fullUrl);
+      console.log("캐시 없음", key);
       
-      fetchWithTimeout(apiUrl, fullUrl, 100000)
+      fetchWithTimeout(apiUrl, props, 100000)
       .then(data=>{
         setLoading(false)
         changeReviewButtonText()
         changeReviewText(data.result, false)
         // 흠... 이건 비동기로 해야하나
-        setCachedData(fullUrl, data.result)
+        setCachedData(key, data.result)
       })
       .catch(error=>{
         setLoading(false)
@@ -133,12 +137,12 @@ async function reviewProcess(){
   } catch (error) {
       console.error("스토리지 접근 오류", error);
       // 캐시 읽기 오류이면 바로 서버 요청
-      fetchWithTimeout(apiUrl, fullUrl, 100000)
+      fetchWithTimeout(apiUrl, props, 100000)
       .then(data=>{
         setLoading(false)
         changeReviewButtonText()
         changeReviewText(data.result, false)
-        setCachedData(fullUrl, data.result)
+        setCachedData(key, data.result)
       })
       .catch(error=>{
         setLoading(false)
@@ -155,9 +159,9 @@ async function reviewProcess(){
   // getCachedDataServerData(fullUrl)
 }
 
-
-
-
+//
+//
+//
 function getCachedData(key) {
   return new Promise((resolve, reject) => {
       chrome.storage.local.get(key, result => {
@@ -180,13 +184,10 @@ function setCachedData(fullUrl, data) {
   });
 }
 
-function fetchWithTimeout(apiUrl, fullUrl,  timeout){
+function fetchWithTimeout(apiUrl, props,  timeout){
   // 전송할 데이터
-  const data = {
-    url: fullUrl
-  };
   
-  console.log('서버에 전달되는 데이터',data)
+  console.log('서버에 전달되는 데이터',props)
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('Request timed out'));
@@ -197,7 +198,7 @@ function fetchWithTimeout(apiUrl, fullUrl,  timeout){
       headers: {
         'Content-Type': 'application/json' // 콘텐츠 타입 헤더 설정
       },
-      body: JSON.stringify(data) // 바디에 JSON 데이터 첨부
+      body: JSON.stringify(props) // 바디에 JSON 데이터 첨부
     })
     .then(response => {
       clearTimeout(timer);
@@ -216,26 +217,9 @@ function fetchWithTimeout(apiUrl, fullUrl,  timeout){
   });
 }
 
-function fetchServer(fullUrl){
-  const apiUrl = 'http://43.203.207.57:8080/summary/smartstore';
-  fetchWithTimeout(apiUrl, fullUrl, 100000)
-  .then(data=>{
-    setLoading(false)
-    changeReviewButtonText()
-    changeReviewText(data.result, false)
-    setCachedData(fullUrl, data.result)
-  })
-  .catch(error=>{
-    setLoading(false)
-    changeReviewButtonText()
-    if (error.message === 'Request timed out') {
-      changeReviewText('요청 시간 초과', true);
-    } else {
-      changeReviewText('네트워크 오류', true); // 다른 모든 에러 처리
-    }
-  })
-}
-
+//
+//
+//
 // 도메인 변수 설정
 function setDomain(urlString){
   const url = new URL(urlString); // URL 객체 생성
@@ -282,6 +266,7 @@ function changeReviewText(data, error){
     reviewConsTextId.textContent = data.cons.slice(3)
     reviewOverallTextId.textContent = data.comprensive.slice(3)
   }
+}
 
 
 function setLoading(state){
