@@ -82,8 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // 리뷰 요약 처리
 async function reviewProcess(){
   // 버튼 클릭 시 "요약 중" 메시지 표시
-  //const fullUrl = `${protocol}//${domain}${pathname}`;
-  let apiUrl = 'http://43.203.207.57:8080/summary/';
+  let apiUrl = 'https://hingguri.shop/summary/';
   let props
   
   try {
@@ -264,7 +263,7 @@ function changeReviewText(data, error){
     reviewOverallId.style.display = 'block'
     reviewProsTextId.textContent = data.pros.slice(3)
     reviewConsTextId.textContent = data.cons.slice(3)
-    reviewOverallTextId.textContent = data.comprensive.slice(3)
+    reviewOverallTextId.textContent = data.comprehensive.slice(3)
   }
 }
 
