@@ -1,0 +1,238 @@
+document.addEventListener('DOMContentLoaded', function() {
+  setCachedData('www.coupang.com/','캐시데이터',5)
+  domainTextId = document.getElementById('1')
+  reviewButtonId = document.getElementById('2')
+  reviewTextId = document.getElementById('3')
+  
+  // 탭 변경에 따른 측면 패널 업데이트
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "updatePanel") {
+      const urlString = message.url;
+      const url = new URL(urlString); // URL 객체 생성
+      domain = url.hostname;
+      pathname = url.pathname
+      changeCurrentDomain()
+      checkCurrentDomain()
+      changeReviewButtonText()
+    }
+  });
+    
+  // 초기 측면패널 도메인 설명
+  chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+    const urlString = tabs[0].url;
+    let url = new URL(tabs[0].url);
+    pathname = url.pathname
+    domain = url.hostname;
+    fullDomain = `${url.protocol}//${url.hostname}`;
+    console.log(fullDomain)
+    // 여기서 도메인 정보를 활용한 로직을 실행합니다.
+    changeCurrentDomain()
+    checkCurrentDomain()
+    changeReviewButtonText()
+  });
+  
+
+  reviewButtonId.addEventListener('click', function() {
+    
+    if(request === false && permit === true){
+      reviewProcess()
+    }
+  });
+    
+});
+
+
+function changeCurrentDomain(){
+  domainTextId.textContent = "현재 도메인: " + domain;
+  console.log(domain)
+}
+
+function checkCurrentDomain(){
+  if(domainList.includes(domain)){
+    permit=true;
+  }
+  else {
+    permit=false;
+  }
+}
+
+function changeReviewButtonText(){
+  if(request===false){
+    if(permit){
+      reviewButtonId.textContent = "요약 하기"
+    }
+    else{
+      reviewButtonId.textContent = "요약 불가"
+    }
+  }
+}
+
+function setCachedData(url, data, expirationDays) {
+  const expirationTime = new Date().getTime() + (expirationDays * 24 * 60 * 60 * 1000);
+  const cachedData = {
+    data: data,
+    expirationTime: expirationTime
+  };
+  let key = { [url]: cachedData }; // 동적으로 키를 설정하기 위해 객체를 사용합니다.
+  chrome.storage.local.set(key, function() {
+    console.log('Cached data saved for', url);
+  });
+}
+
+function getCachedData(url, intervalId) {
+  function test(result) {
+    const cachedData = result[url];
+        console.log(result,'asdasd')
+        if (cachedData && new Date().getTime() < cachedData.expirationTime) {
+          // 만료되지 않은 데이터
+          clearInterval(intervalId)
+          changeReviewText(cachedData.data)
+        } else {
+          // 데이터가 없거나 만료되었을 경우 null 반환
+          fetchServer(url)
+          
+          /*
+          if(new Date().getTime() < cachedData.expirationTime) {
+                  chrome.storage.local.remove(url, function() {
+                    console.log('Cached data removed for', url);
+                  });
+                }
+          */
+          
+        }
+  }
+  chrome.storage.local.get(url, test);
+}
+
+function fetchServer(url){
+  
+  const apiUrl = 'http://43.203.207.57:8080/summary/smartstore';
+  
+  // 전송할 데이터
+  const data = {
+    url: url
+  };
+  
+  console.log('서버',url)
+  
+  fetch(apiUrl, {
+    method: 'POST', // 요청 메서드 설정
+    headers: {
+      'Content-Type': 'application/json' // 콘텐츠 타입 헤더 설정
+    },
+    body: JSON.stringify(data) // 바디에 JSON 데이터 첨부
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      clearInterval(intervalId)
+      changeReviewText(data)
+      console.log(data);
+    })
+    .catch(error => {
+      console.error('There was a problem with your fetch operation:', error);
+    });
+
+  
+  
+  /*
+                fetch('서버_URL')
+                      .then((response) => {
+                        // 요청 성공 처리
+                        // 요청이 성공적으로 완료되었으므로 정상 작동, 하지만 시간을 벗어나면 아래 함수는 동작 안
+                        clearInterval(intervalId)
+                        changeReviewText('서버 응답 없음')
+                        // 다른 성공 처리 로직...
+                      })
+                      .catch((error) => {
+                        // 요청 실패 처리
+                        // 실패 처리 로직...
+                      });
+                */
+}
+
+function reviewProcess(){
+  // 버튼 클릭 시 "요약 중" 메시지 표시
+    request=true
+    requestCompleted = false; // 요청이 시작될 때 플래그 초기화
+    reviewButtonId.textContent = "요약 중";
+    reviewTextId.textContent = '';
+    
+    // 1초마다 점을 추가하여 "요약 중" 메시지 표시
+    let i = 1;
+    var intervalId = setInterval(() => {
+      reviewButtonId.textContent = '요약 중' + '.'.repeat(i);
+      if (i === 6) i = 1;
+      else i++;
+    }, 1000);
+    
+    getCachedData(fullDomain+pathname, intervalId)
+    
+  // 10초 후에 실행되는 함수
+    var timeoutId = setTimeout(() => {
+      clearInterval(intervalId)
+      changeReviewText('서버 응답 없음')
+    }, 10000);
+}
+
+function changeReviewText(data, intervalId){
+  if (!requestCompleted){// 요청이 아직 완료되지 않았다면 or 제한시간 내이면
+    reviewTextId.textContent = data;
+    requestCompleted=true
+    request = false;
+    checkCurrentDomain();
+    changeReviewButtonText();
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+function getCachedDataServerData(fullUrl) {
+  try {
+    const result = await getStorageData(fullUrl);
+    const cachedData = result[fullUrl];
+    
+    if (cachedData) {
+      console.log("캐시 있음", cachedData);
+      setLoading(false);
+      changeReviewButtonText();
+      changeReviewText(cachedData.data, false);
+    } else {
+      console.log("캐시 없음", fullUrl);
+      fetchServer(fullUrl);
+    }
+  } catch (error) {
+    // 접근 오류이면 그냥 바로 요청 ㄱㄱ
+    console.error("스토리지 접근 오류", error);
+    fetchServer(fullUrl);
+  }
+  
+  /*
+  function test(result) {
+    const cachedData = result[fullUrl];
+    if(cachedData){
+      console.log("캐시 있음", cachedData)
+      setLoading(false)
+      changeReviewButtonText()
+      changeReviewText(cachedData.data, false)
+    } else {
+      console.log("캐시 없음", fullUrl)
+      fetchServer(fullUrl)
+    }
+  }
+  chrome.storage.local.get(fullUrl, test);
+  */
+}

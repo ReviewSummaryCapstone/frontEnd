@@ -7,7 +7,8 @@
     "activeTab",
     "tabs",
     "storage",
-    "scripting"
+    "scripting",
+    "identity"
   ],
   "host_permissions": [
     "https://smartstore.naver.com/*",
@@ -23,5 +24,9 @@
     "service_worker": "service-worker.js"
   },
   "content_scripts": [
-  ]
+  ],
+  "oauth2": {
+    "client_id": "348275241100-st3sg1fg3ffp524psu21p1ivabjg7gnm.apps.googleusercontent.com",
+    "scopes":["https://www.googleapis.com/auth/userinfo.profile"]
+  }
 }
