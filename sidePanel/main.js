@@ -1,10 +1,9 @@
 import { getNaverProps, getCoupangProps } from './domExtractor.js'
+import {DOMAIN_LIST, API} from '../config.js'
 
 let permit=false
 let domain=null
 let pathname=null
-let fullDomain=null
-let arrowState=false
 
 let domainTextId
 let domainListId
@@ -19,12 +18,10 @@ let reviewOverallTextId
 let reviewErrorId
 let reviewErrorTextId
 let arrowId
+let loginId
+let getProfileId
+let accessToken
 
-const DOMAIN_LIST=[
-  "www.smartstore.naver.com",
-  "smartstore.naver.com",
-  "www.coupang.com"
-]
 
 document.addEventListener('DOMContentLoaded', function() {
   domainTextId = document.querySelector('.domainSection h2')
@@ -40,12 +37,61 @@ document.addEventListener('DOMContentLoaded', function() {
   reviewErrorId = document.querySelector('#error')
   reviewErrorTextId = document.querySelector('#error p')
   arrowId = document.querySelector('#arrow')
-  //setCachedData('https://smartstore.naver.com/jangsinmall/products/8713155253', {pros:'장점: 장점내용', cons:'단점: 단점내용', comprensive:'종합: 종합내용'})
+  /*
+  loginId = document.querySelector('#login')
+  getProfileId = document.querySelector('#getProfile')
+
+  loginId.addEventListener('click',()=>{
+    chrome.identity.getAuthToken({interactive: true}, function(token) {
+      console.log(token);
+      accessToken=token
+    });
+  })
+
+
+  getProfile.addEventListener('click', ()=>{
+    fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        console.log(response)
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Failed to retrieve user info');
+        }
+      })
+      .then(userInfo => {
+        console.log(userInfo); // 사용자 정보 출력
+        // 여기서 사용자 정보를 활용한 로직을 추가할 수 있습니다.
+      })
+      .catch(error => {
+        console.error('Error fetching user info:', error);
+      });
+  })
+  */
 
   // 탭 변경에 따른 측면 패널 업데이트
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "updatePanel") {
       const urlString = message.url;
+      if(urlString) {
+        setDomain(urlString)
+        changeCurrentDomainText()
+        verifyCurrentDomain()
+        changeReviewButtonText()
+      }
+    }
+  });
+
+  // 초기 측면패널 도메인 설명
+  chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+    const urlString = tabs[0].url;
+    if (urlString) {
       setDomain(urlString)
       changeCurrentDomainText()
       verifyCurrentDomain()
@@ -53,15 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // 초기 측면패널 도메인 설명
-  chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-    const urlString = tabs[0].url;
-    setDomain(urlString)
-    changeCurrentDomainText()
-    verifyCurrentDomain()
-    changeReviewButtonText()
-  });
-
+  // 리뷰 요약 버튼
   reviewButtonId.addEventListener('click', function() {
     if(permit === true){
       setLoading(true)
@@ -69,6 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // 허용 도메인 목록 여닫기
   arrowId.addEventListener('click', function() {
     this.style.transform = (this.style.transform === 'rotate(180deg)') ? 'rotate(0deg)' : 'rotate(180deg)';
     domainListId.style.display = (domainListId.style.display === 'none' ? 'block' : 'none')
@@ -82,80 +121,71 @@ document.addEventListener('DOMContentLoaded', function() {
 // 리뷰 요약 처리
 async function reviewProcess(){
   // 버튼 클릭 시 "요약 중" 메시지 표시
-  let apiUrl = 'https://hingguri.shop/summary/';
+  //const fullUrl = `${protocol}//${domain}${pathname}`;
+  let apiUrl = API;
   let props
   
+  // 접속 도메인에 따른 api 주소 결정
   try {
-    if(domain === "smartstore.naver.com") {
-      apiUrl+='smartstore'
-      props = await getNaverProps()
-    } else if (domain === "www.coupang.com") {
-      apiUrl+='coupang'
-      props = await getCoupangProps()
+    switch (domain) {
+      case "smartstore.naver.com": {
+        apiUrl+='smartstore'
+        props = await getNaverProps()
+        break
+      }
+      case "www.coupang.com": {
+        apiUrl+='coupang'
+        props = await getCoupangProps()
+        break
+      }
     }
   } catch (error) {
+    setLoading(false)
+    changeReviewButtonText()
+    changeReviewText('?????', true);
     console.error('DOM 읽는 것에 에러 발생', error)
+    return
   }
   
   const key = domain+'/'+JSON.stringify(props)
-  console.log('apiUrl',apiUrl,'props',props,'key',key)
+  //console.log('apiUrl',apiUrl,'props',props,'key',key)
     
   // 여기서부터 비동기 작업 (크롬 API 때문)
   try {
+    //
     const result = await getCachedData(key);
     const cachedData = result[key];
-    
+    let summaryData
     if (cachedData) {
       console.log("캐시 있음", cachedData);
-      setLoading(false);
-      changeReviewButtonText();
-      changeReviewText(cachedData.data, false);
+      summaryData = cachedData.data
     } else {
       console.log("캐시 없음", key);
-      
-      fetchWithTimeout(apiUrl, props, 100000)
-      .then(data=>{
-        setLoading(false)
-        changeReviewButtonText()
-        changeReviewText(data.result, false)
-        // 흠... 이건 비동기로 해야하나
-        setCachedData(key, data.result)
-      })
-      .catch(error=>{
-        setLoading(false)
-        changeReviewButtonText()
-        if (error.message === 'Request timed out') {
-          changeReviewText('요청 시간 초과', true);
-        } else {
-          changeReviewText('네트워크 오류', true); // 다른 모든 에러 처리
-        }
-      })
-      
-      //fetchServer(fullUrl);
+      //
+      const fetchJSON = await fetchWithTimeout(apiUrl, props, 20000)
+      console.log(fetchJSON)
+      summaryData  = fetchJSON.result
+      //
+      setCachedData(key, summaryData)
     }
+    setLoading(false);
+    changeReviewButtonText();
+    changeReviewText(summaryData, false);
+
   } catch (error) {
-      console.error("스토리지 접근 오류", error);
-      // 캐시 읽기 오류이면 바로 서버 요청
-      fetchWithTimeout(apiUrl, props, 100000)
-      .then(data=>{
-        setLoading(false)
-        changeReviewButtonText()
-        changeReviewText(data.result, false)
-        setCachedData(key, data.result)
-      })
-      .catch(error=>{
-        setLoading(false)
-        changeReviewButtonText()
-        if (error.message === 'Request timed out') {
-          changeReviewText('요청 시간 초과', true);
-        } else {
-          changeReviewText('네트워크 오류', true); // 다른 모든 에러 처리
-        }
-      })
-    
-      //fetchServer(fullUrl);
+    setLoading(false)
+    changeReviewButtonText()
+    switch (error.message) {
+      case '요청 시간 초과': {
+        changeReviewText('요청 시간 초과', true);
+        break
+      }
+      case '네트워크 오류': {
+        changeReviewText('네트워크 오류', true); // 다른 모든 에러 처리
+        break
+      }
+    }
   }
-  // getCachedDataServerData(fullUrl)
 }
 
 //
@@ -165,7 +195,8 @@ function getCachedData(key) {
   return new Promise((resolve, reject) => {
       chrome.storage.local.get(key, result => {
         if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
+          console.warn('스토리지 접근 오류:', chrome.runtime.lastError);
+          resolve();
         } else {
           resolve(result);
         }
@@ -173,24 +204,33 @@ function getCachedData(key) {
     });
 }
 
-function setCachedData(fullUrl, data) {
+function setCachedData(key, data) {
   const cachedData = {
     data: data,
   };
-  let key = { [fullUrl]: cachedData }; // 동적으로 키를 설정하기 위해 객체를 사용합니다.
-  chrome.storage.local.set(key, function() {
-    console.log('Cached data saved for', fullUrl, data);
+
+  let object = { [key]: cachedData }; // 동적으로 키를 설정하기 위해 객체를 사용합니다.
+  chrome.storage.local.set(object, function() {
+    if (chrome.runtime.lastError) {
+      console.warn('캐시 데이터 저장 오류:', chrome.runtime.lastError);
+      // 에러 발생 시에도 resolve 호출
+      //resolve();
+    } else {
+      console.log(key, '에 대한 캐시 데이터가 저장되었습니다:', data);
+      //resolve();
+    }
   });
 }
 
 function fetchWithTimeout(apiUrl, props,  timeout){
-  // 전송할 데이터
-  
-  console.log('서버에 전달되는 데이터',props)
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error('Request timed out'));
+      console.log('요청 시간 초과')
+      reject(new Error('요청 시간 초과'));
     }, timeout);
+
+    // 전송할 데이터
+    console.log('서버에 전달되는 데이터',props)
 
     fetch(apiUrl,{
       method: 'POST', // 요청 메서드 설정
@@ -202,11 +242,13 @@ function fetchWithTimeout(apiUrl, props,  timeout){
     .then(response => {
       clearTimeout(timer);
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        console.log('ㅅㅓㅂㅓ error')
+        throw new Error('네트워크 오류');
       }
       return response.json();
     })
     .then(data => {
+      console.log('ㅅㅓㅂㅓ ㅇㅡㅇㄷㅏㅂ?', data  )
       resolve(data);
     })
     .catch(error => {
@@ -224,8 +266,6 @@ function setDomain(urlString){
   const url = new URL(urlString); // URL 객체 생성
   domain = url.hostname
   pathname = url.pathname
-  const protocol = url.protocol
-  console.log(url,domain,pathname)
 }
 
 // 현재 도메인을 출력
@@ -277,50 +317,3 @@ function setLoading(state){
     donutLoading.style.display = 'none'
   }
 }
-
-/*
-async function getCurrentTabHTML(domian) {
-  try {
-    const tab = await getActiveTab();
-    const results = await executeScript(tab.id, domain);
-    return results;
-  } catch (error) {
-    console.error('Error getting HTML from the current tab:', error);
-    return null;  // 에러 시 null 반환 또는 적절한 에러 처리
-  }
-}
-
-function getActiveTab() {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError));
-      } else {
-        resolve(tabs[0]);
-      }
-    });
-  });
-}
-
-function executeScript(tabId, domain) {
-  let getProps = getCoupangProps;
-  return new Promise((resolve, reject) => {
-    chrome.scripting.executeScript({
-      target: {tabId: tabId},
-      function: getPageHTML,
-      args: [domain]
-    }, (injectionResults) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError));
-      } else {
-        resolve(injectionResults.map(result => result.result));
-      }
-    });
-  });
-}
-
-function getCoupangProps(domain) {
-  const link = document.querySelector('link[rel="canonical"]');
-  console.log(link.href)
-}
-*/
