@@ -1,13 +1,14 @@
 export async function getCoupangProps() {
     function parsingLogic() {
-        const link = document.head.querySelector('link[rel="canonical"]');
-        const url = link.href
-        const urlObject = new URL(url)
-        const productNo = urlObject.pathname.split('/').at(-1)
-        
-        
-        console.log('찾은 데이터:', productNo);
-        return {'productNo': productNo}
+        try {
+            const link = document.head.querySelector('link[rel="canonical"]');
+            const url = link.href
+            const urlObject = new URL(url)
+            const productNo = urlObject.pathname.split('/').at(-1)
+            return {'productNo': productNo}
+        } catch (error) {
+            return null;
+        }
     }
     
     const tab = await getActiveTab();
@@ -27,14 +28,15 @@ export async function getNaverProps() {
                 // JSON 문자열을 객체로 변환합니다.
                 const dataObject = JSON.parse(jsonData);
                 const originProductNo = dataObject.product.A.productNo
-                const checkoutMerchantNo = dataObject.smartStoreV2.channel.payReferenceKey
+                const checkoutMerchantNo = dataObject.product.A.channel.naverPaySellerNo
+                //const checkoutMerchantNo = dataObject.smartStoreV2.channel.payReferenceKey
                 console.log('찾은 데이터:', originProductNo, checkoutMerchantNo);
                 return {
                     'originProductNo': originProductNo,
                     'checkoutMerchantNo': checkoutMerchantNo
                 }
             } catch (error) {
-                console.error('JSON 파싱 오류:', error);
+                //console.error('JSON 파싱 오류:', error);
                 return null
             }
         } else {
@@ -87,9 +89,12 @@ function getActiveTab() {
 export async function getHTMLProps(tabId, parsingLogic) {
     try {
         const result = await executeParsingLogic(tabId, parsingLogic);
+        if (result === null) {
+            throw new Error("상품 페이지가 아닙니다")
+        }
         return result;
     } catch (error) {
-        console.error('Error getting HTML from the current tab:', error);
+        //console.error('Error getting HTML from the current tab:', error);
         return null;  // 에러 시 null 반환 또는 적절한 에러 처리
     }
 }
@@ -100,9 +105,12 @@ async function executeParsingLogic(tabId, parsingLogic) {
             target: {tabId: tabId},
             func: parsingLogic
         });
+        if (results[0].result === null) {
+            throw new Error("상품 페이지가 아닙니다")
+        }
         return results[0].result; // 첫 번째 결과, 주 DOM에서의 결과
     } catch (error) {
-        console.error('Error extracting data:', error);
+        //console.error('Error extracting data:', error);
         return null;
     }
     
