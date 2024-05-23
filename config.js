@@ -1,7 +1,7 @@
 
 
 export const DOMAIN_LIST = [
-    "www.smartstore.naver.com",
+    "brand.naver.com",
     "smartstore.naver.com",
     "www.coupang.com"
 ]

@@ -128,6 +128,7 @@ async function reviewProcess(){
   // 접속 도메인에 따른 api 주소 결정
   try {
     switch (domain) {
+      case "brand.naver.com":
       case "smartstore.naver.com": {
         apiUrl+='smartstore'
         props = await getNaverProps()
@@ -139,14 +140,18 @@ async function reviewProcess(){
         break
       }
     }
+    if (props === null) {
+      throw new Error("상품 페이지가 아닙니다")
+    }
+
   } catch (error) {
     setLoading(false)
     changeReviewButtonText()
-    changeReviewText('?????', true);
-    console.error('DOM 읽는 것에 에러 발생', error)
+    changeReviewText('상품 페이지가 아닙니다.', true);
+    //console.error('DOM 읽는 것에 에러 발생', error)
     return
   }
-  
+  console.log(props)
   const key = domain+'/'+JSON.stringify(props)
   //console.log('apiUrl',apiUrl,'props',props,'key',key)
     
@@ -177,7 +182,7 @@ async function reviewProcess(){
     changeReviewButtonText()
     switch (error.message) {
       case '요청 시간 초과': {
-        changeReviewText('요청 시간 초과', true);
+        changeReviewText('잠시 후 다시 이용해 주세요.', true);
         break
       }
       case '네트워크 오류': {
@@ -301,9 +306,13 @@ function changeReviewText(data, error){
     reviewProsId.style.display = 'block'
     reviewConsId.style.display = 'block'
     reviewOverallId.style.display = 'block'
-    reviewProsTextId.textContent = data.pros.slice(3)
-    reviewConsTextId.textContent = data.cons.slice(3)
-    reviewOverallTextId.textContent = data.comprehensive.slice(3)
+    let index = data.pros.indexOf(':')
+    console.log(index)
+    reviewProsTextId.textContent = data.pros.slice(index + 1).trim()
+    index = data.cons.indexOf(':')
+    reviewConsTextId.textContent = data.cons.slice(index + 1).trim()
+    index = data.comprehensive.indexOf(':')
+    reviewOverallTextId.textContent = data.comprehensive.slice(index + 1).trim()
   }
 }
 
