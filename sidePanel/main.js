@@ -1,11 +1,13 @@
 import { getNaverProps, getCoupangProps } from './domExtractor.js'
 import {DOMAIN_LIST, API} from '../config.js'
 
+
+
 let permit=false
 let domain=null
 let pathname=null
 
-let domainTextId
+let domainImageId
 let domainListId
 let reviewButtonId
 let donutLoading
@@ -24,8 +26,9 @@ let accessToken
 
 
 document.addEventListener('DOMContentLoaded', function() {
-  domainTextId = document.querySelector('.domainSection h2')
-  domainListId = document.querySelector('.domainListArticle p')
+
+  domainImageId = document.querySelector('#domain')
+  domainListId = document.querySelector('.domainListArticle > div')
   reviewButtonId = document.querySelector('.reviewSummaryButton')
   donutLoading = document.querySelector('.donut')
   reviewProsId = document.querySelector('#pros')
@@ -37,7 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
   reviewErrorId = document.querySelector('#error')
   reviewErrorTextId = document.querySelector('#error p')
   arrowId = document.querySelector('#arrow')
-  /*
+
+
+
+
   loginId = document.querySelector('#login')
   getProfileId = document.querySelector('#getProfile')
 
@@ -73,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Error fetching user info:', error);
       });
   })
-  */
+
 
   // 탭 변경에 따른 측면 패널 업데이트
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -81,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const urlString = message.url;
       if(urlString) {
         setDomain(urlString)
-        changeCurrentDomainText()
+        changeCurrentDomainImage()
         verifyCurrentDomain()
         changeReviewButtonText()
       }
@@ -93,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlString = tabs[0].url;
     if (urlString) {
       setDomain(urlString)
-      changeCurrentDomainText()
+      changeCurrentDomainImage()
       verifyCurrentDomain()
       changeReviewButtonText()
     }
@@ -110,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 허용 도메인 목록 여닫기
   arrowId.addEventListener('click', function() {
     this.style.transform = (this.style.transform === 'rotate(180deg)') ? 'rotate(0deg)' : 'rotate(180deg)';
-    domainListId.style.display = (domainListId.style.display === 'none' ? 'block' : 'none')
+    domainListId.style.display = (domainListId.style.display === 'grid' ? 'none' : 'grid')
   })
     
 });
@@ -274,8 +280,35 @@ function setDomain(urlString){
 }
 
 // 현재 도메인을 출력
-function changeCurrentDomainText(){
-  domainTextId.textContent = "현재 도메인: " + domain;
+function changeCurrentDomainImage(){
+  let path;
+  switch (domain) {
+    case 'brand.naver.com':
+    case 'smartstore.naver.com':
+      path = 'naver.svg'
+      break
+    case 'www.coupang.com':
+      path = 'coupang.svg'
+      break
+    default :
+  }
+
+  if (!path) {
+    domainImageId.textContent = ""
+  }
+
+  fetch(`../assests/${path}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(svgContent => {
+      // 요소에 SVG 콘텐츠를 삽입합니다.
+      console.log(domainImageId)
+      domainImageId.innerHTML = svgContent;
+    })
 }
 
 // 현재 도메인 검증
@@ -290,8 +323,8 @@ function verifyCurrentDomain(){
 
 // 리뷰 요약 버튼 텍스트 변경
 function changeReviewButtonText(){
-  if(permit) reviewButtonId.textContent = '요약 하기'
-  else reviewButtonId.textContent = '요약 불가'
+  if(permit) reviewButtonId.textContent = '요약하기'
+  else reviewButtonId.textContent = '요약불가'
 }
 
 function changeReviewText(data, error){

@@ -7,8 +7,12 @@
     "activeTab",
     "tabs",
     "storage",
-    "scripting"
+    "scripting",
+    "identity"
   ],
+
+
+
   "host_permissions": [
     "https://smartstore.naver.com/*",
     "https://www.coupang.com/*",
