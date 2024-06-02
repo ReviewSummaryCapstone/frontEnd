@@ -2,21 +2,29 @@
 import DomainManager from "./domainManager.js";
 
 export default function addDomainUpdateListener() {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.type === "updatePanel") {
-            const urlString = message.url;
-            if(urlString) {
-                DomainManager.setDomain(urlString)
-            }
-        }
+
+    // 탭 URL 변경 감지
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+        const urlString = tab.url;
+        test(urlString);
     });
+
+    // 새 탭으로의 이동 감지
+    chrome.tabs.onActivated.addListener(activeInfo => {
+        chrome.tabs.get(activeInfo.tabId, (tab) => {
+            const urlString = tab.url;
+            test(urlString);
+        });
+    });
+
     
     // 초기 측면패널 도메인 설명
     chrome.tabs.query({active: true, currentWindow: true}, tabs => {
         const urlString = tabs[0].url;
-        if (urlString) {
-            DomainManager.setDomain(urlString)
-        }
+        test(urlString);
     });
 }
 
+function test(urlString) {
+    if (urlString) DomainManager.setDomain(urlString);
+}

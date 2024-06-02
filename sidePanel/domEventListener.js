@@ -11,7 +11,6 @@ export default  function addDOMEventListener() {
 
     // 리뷰 요약 버튼
     const reviewButtonId = document.querySelector('.reviewSummaryButton');
-    console.log("ㅆㅣㅂㅏㄹ")
     reviewButtonId.addEventListener('click', function() {
         reviewProcess();
     });
