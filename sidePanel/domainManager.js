@@ -48,6 +48,7 @@ class Domain {
         
         if (!imgPath) {
             this.domainImageId.textContent = ""
+            return
         }
         
         try {
