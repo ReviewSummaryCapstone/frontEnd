@@ -43,31 +43,6 @@ export async function getNaverProps() {
             console.log('첫 번째 스크립트 태그에 window.__PRELOADED_STATE__ 데이터가 없습니다.');
             return null
         }
-        
-        
-        
-        // 페이지가 완전히 로드된 후에 window.__PRELOADED_STATE__에 접근
-        /*
-        try {
-            const preloadedState = window.__PRELOADED_STATE__
-            let t = document.script
-            console.log(window)
-            if (!preloadedState || !preloadedState.product || !preloadedState.product.A || !preloadedState.smartStoreV2 || !preloadedState.smartStoreV2.channel) {
-                console.log('필요한 정보가 누락되었습니다.');
-                return null;
-            }
-            
-            const originProductNo = preloadedState.product.A.productNo
-            const checkoutMerchantNo = preloadedState.smartStoreV2.channel.payReferenceKey
-            return {
-                'originProductNo': originProductNo,
-                'checkoutMerchantNo': checkoutMerchantNo
-            }
-        } catch (error) {
-            console.error('preloaded 상태를 찾을 수 없습니다.', error)
-            return null
-        }
-        */
     }
     
     const tab = await getActiveTab();
@@ -113,19 +88,4 @@ async function executeParsingLogic(tabId, parsingLogic) {
         //console.error('Error extracting data:', error);
         return null;
     }
-    
-    /*
-    return new Promise((resolve, reject) => {
-        chrome.scripting.executeScript({
-            target: {tabId: tabId},
-            function: parsingLogic
-        }, (injectionResults) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError));
-            } else {
-                resolve(injectionResults.map(result => result.result));
-            }
-        });
-    });
-    */
 }
